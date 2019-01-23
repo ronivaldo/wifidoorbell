@@ -1,10 +1,13 @@
-#include <FS.h>                   //this needs to be first, or it all crashes and burns...
+#include <FS.h>
+#define USING_AXTLS                 //this needs to be first, or it all crashes and burns...
 #include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
-//#include <WiFiClientSecure.h>      //Secure client to handle SSL
+#include <WiFiClientSecureAxTLS.h>      //Secure client to handle SSL
+using namespace axTLS;
 #include <PubSubClient.h>         //MQTT library
 #include "src/ConfigPortal.h"         //all the config portal code moved here to keep the main sketch clean. Based on WiFiManager
 #include "src/Blinker.h"             //Library to help with managing the LED blink. Uses millis() instead of delay()
 
+const char* fingerprint = "Paste Cert Thumbprint";
 
 const int buttonPin = 0;   //the button for resetting wifi credentials
 int buttonState;            //the current state of the button input
@@ -14,8 +17,10 @@ unsigned long debounceDelay = 50;    // the debounce time; increase if the outpu
 
 Blinker led1(4, 500, 500);  //create a new blink pattern for the led on pin 4. On for 500ms off for 500ms
 
-
-WiFiClient wifiClient;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored  "-Wdeprecated-declarations"
+WiFiClientSecure wifiClient;
+#pragma GCC diagnostic pop
 PubSubClient client(wifiClient);
 
 long lastMsg = 0;
@@ -73,6 +78,12 @@ void setup() {
   configPortal();
   client.setServer(mqtt_server, atoi(mqtt_port));
   client.setCallback(callback);
+
+  if (client.verify(fingerprint, host)) {
+    Serial.println("certificate matches");
+  } else {
+    Serial.println("certificate doesn't match");
+  }
 
 }
 
