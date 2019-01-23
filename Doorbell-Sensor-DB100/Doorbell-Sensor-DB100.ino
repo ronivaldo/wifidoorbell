@@ -79,7 +79,7 @@ void setup() {
   client.setServer(mqtt_server, atoi(mqtt_port));
   client.setCallback(callback);
 
-  if (client.verify(fingerprint, host)) {
+  if (wifiClient.verify(fingerprint, mqtt_server)) {
     Serial.println("certificate matches");
   } else {
     Serial.println("certificate doesn't match");
