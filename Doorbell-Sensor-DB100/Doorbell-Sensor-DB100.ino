@@ -1,11 +1,11 @@
 #include <FS.h>
 #define USING_AXTLS                 //this needs to be first, or it all crashes and burns...
-#include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
-#include <WiFiClientSecureAxTLS.h>      //Secure client to handle SSL
+#include <ESP8266WiFi.h>            //https://github.com/esp8266/Arduino
+#include <WiFiClientSecureAxTLS.h>  //Secure client to handle SSL
 using namespace axTLS;
-#include <PubSubClient.h>         //MQTT library
-#include "src/ConfigPortal.h"         //all the config portal code moved here to keep the main sketch clean. Based on WiFiManager
-#include "src/Blinker.h"             //Library to help with managing the LED blink. Uses millis() instead of delay()
+#include <PubSubClient.h>           //MQTT library
+#include "src/ConfigPortal.h"       //all the config portal code moved here to keep the main sketch clean. Based on WiFiManager
+#include "src/Blinker.h"           //Library to help with managing the LED blink. Uses millis() instead of delay()
 
 const char* fingerprint = "12 B2 D8 DB 94 71 BB B3 91 71 87 58 88 96 53 6D 80 7F 22 E7";
 
@@ -113,10 +113,10 @@ void loop() {
           digitalWrite(4, LOW);
           delay(300);
         }
-        Serial.println("Erasing WiFi Credentials");
-        //wifiManager.resetSettings();
-        //delay(500);
-        //ESP.restart();
+          Serial.println("Erasing WiFi Credentials");
+          WiFi.disconnect(true);
+          delay(200);
+          ESP.reset();
       }
     }
   }
