@@ -7,7 +7,7 @@ using namespace axTLS;
 #include "src/ConfigPortal.h"         //all the config portal code moved here to keep the main sketch clean. Based on WiFiManager
 #include "src/Blinker.h"             //Library to help with managing the LED blink. Uses millis() instead of delay()
 
-const char* fingerprint = "Paste Cert Thumbprint";
+const char* fingerprint = "12 B2 D8 DB 94 71 BB B3 91 71 87 58 88 96 53 6D 80 7F 22 E7";
 
 const int buttonPin = 0;   //the button for resetting wifi credentials
 int buttonState;            //the current state of the button input
@@ -107,14 +107,16 @@ void loop() {
     if (buttonReading != buttonState) {
       buttonState = buttonReading;
       if (buttonState == LOW) {
-        Serial.println("Erasing WiFi Credentials");
         for (int i = 1; i <= 3; i++) {    //Blink the LED 3 times
           digitalWrite(4, HIGH);
           delay(300);
           digitalWrite(4, LOW);
           delay(300);
         }
-        //put the wifi disconnect here to erase wifi credentials
+        Serial.println("Erasing WiFi Credentials");
+        //wifiManager.resetSettings();
+        //delay(500);
+        //ESP.restart();
       }
     }
   }
