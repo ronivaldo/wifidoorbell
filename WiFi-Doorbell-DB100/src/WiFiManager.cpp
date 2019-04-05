@@ -12,7 +12,7 @@
 
 #include "WiFiManager.h"
 
-const char sw_ver[10] = "1.1"; //software version
+const char sw_ver[10] = "Dev-OTA"; //software version
 
 WiFiManagerParameter::WiFiManagerParameter(const char *custom) {
   _id = NULL;
@@ -153,6 +153,8 @@ void WiFiManager::setupConfigPortal() {
   server->on(String(F("/r")), std::bind(&WiFiManager::handleReset, this));
   //server->on("/generate_204", std::bind(&WiFiManager::handle204, this));  //Android/Chrome OS captive portal check.
   server->on(String(F("/fwlink")), std::bind(&WiFiManager::handleRoot, this));  //Microsoft captive portal. Maybe not needed. Might be handled by notFound handler.
+  server->on((String)FPSTR(R_update), std::bind(&WiFiManager::handleUpdate, this));
+  server->on((String)FPSTR(R_updatedone), HTTP_POST, std::bind(&WiFiManager::handleUpdateDone, this), std::bind(&WiFiManager::handleUpdating, this));
   server->onNotFound (std::bind(&WiFiManager::handleNotFound, this));
   server->begin(); // Web server start
   DEBUG_WM(F("HTTP server started"));
@@ -739,6 +741,120 @@ void WiFiManager::handleReset() {
   delay(3000);
   ESP.reset();
   delay(2000);
+}
+
+// Called when /update is requested
+void WiFiManager::handleUpdate() {
+	DEBUG_WM(DEBUG_VERBOSE,F("<- Handle update"));
+	if (captivePortal()) return; // If captive portal redirect instead of displaying the page
+	String page = getHTTPHead(FPSTR(S_options)); // @token options
+	String str = FPSTR(HTTP_ROOT_MAIN);
+	str.replace(FPSTR(T_v), configPortalActive ? _apName : WiFi.localIP().toString()); // use ip if ap is not active for heading
+	page += str;
+
+	page += FPSTR(HTTP_UPDATE);
+	page += FPSTR(HTTP_END);
+
+	server->sendHeader(FPSTR(HTTP_HEAD_CL), String(page.length()));
+	server->send(200, FPSTR(HTTP_HEAD_CT), page);
+
+}
+
+// upload via /u POST
+void WiFiManager::handleUpdating(){
+  // @todo
+  // cannot upload files in captive portal, file select is not allowed, show message with link or hide
+  // cannot upload if softreset after upload, maybe check for hard reset at least for dev, ERROR[11]: Invalid bootstrapping state, reset ESP8266 before updating
+  // add upload status to webpage somehow
+  // abort upload if error detected ?
+  // [x] supress cp timeout on upload, so it doesnt keep uploading?
+  // add progress handler for debugging
+  // combine route handlers into one callback and use argument or post checking instead of mutiple functions maybe, if POST process else server upload page?
+  // [x] add upload checking, do we need too check file?
+  // convert output to debugger if not moving to example
+	if (captivePortal()) return; // If captive portal redirect instead of displaying the page
+  bool error = false;
+  unsigned long _configPortalTimeoutSAV = _configPortalTimeout; // store cp timeout
+  _configPortalTimeout = 0; // disable timeout
+
+  // handler for the file upload, get's the sketch bytes, and writes
+	// them through the Update object
+	HTTPUpload& upload = server->upload();
+
+  // UPLOAD START
+	if (upload.status == UPLOAD_FILE_START) {
+	  if(_debug) Serial.setDebugOutput(true);
+
+    #ifdef ESP8266
+    		WiFiUDP::stopAll();
+    		uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+    #elif defined(ESP32)
+          // Think we do not need to stop WiFIUDP because we haven't started a listener
+    		  uint32_t maxSketchSpace = (ESP.getFlashChipSize() - 0x1000) & 0xFFFFF000;
+    #endif
+
+    Serial.printf("Update: %s\r\n", upload.filename.c_str());
+
+  	if (!Update.begin(maxSketchSpace)) { // start with max available size
+  			Update.printError(Serial); // size error
+        error = true;
+  	}
+	}
+  // UPLOAD WRITE
+  else if (upload.status == UPLOAD_FILE_WRITE) {
+		Serial.print(".");
+		if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+			Update.printError(Serial); // write failure
+      error = true;
+		}
+	}
+  // UPLOAD FILE END
+  else if (upload.status == UPLOAD_FILE_END) {
+		if (Update.end(true)) { // true to set the size to the current progress
+			Serial.printf("Updated: %u bytes\r\nRebooting...\r\n", upload.totalSize);
+		}
+    else {
+			Update.printError(Serial);
+      error = true;
+		}
+	}
+  // UPLOAD ABORT
+  else if (upload.status == UPLOAD_FILE_ABORTED) {
+		Update.end();
+		DEBUG_WM(F("[OTA] Update was aborted"));
+    error = true;
+  }
+  if(error) _configPortalTimeout = _configPortalTimeoutSAV;
+	delay(0);
+}
+
+// upload and ota done, show status
+void WiFiManager::handleUpdateDone() {
+	DEBUG_WM(DEBUG_VERBOSE, F("<- Handle update done"));
+	if (captivePortal()) return; // If captive portal redirect instead of displaying the page
+
+	String page = getHTTPHead(FPSTR(S_options)); // @token options
+	String str  = FPSTR(HTTP_ROOT_MAIN);
+	str.replace(FPSTR(T_v), configPortalActive ? _apName : WiFi.localIP().toString()); // use ip if ap is not active for heading
+	page += str;
+
+	if (Update.hasError()) {
+		page += FPSTR(HTTP_UPDATE_FAIL);
+		DEBUG_WM(F("[OTA] update failed"));
+	}
+	else {
+		page += FPSTR(HTTP_UPDATE_OK);
+		DEBUG_WM(F("[OTA] update ok"));
+	}
+	page += FPSTR(HTTP_END);
+
+	server->sendHeader(FPSTR(HTTP_HEAD_CL), String(page.length()));
+	server->send(200, FPSTR(HTTP_HEAD_CT), page);
+
+	delay(1000); // send page
+	if (!Update.hasError()) {
+		ESP.restart();
+	}
 }
 
 void WiFiManager::handleNotFound() {

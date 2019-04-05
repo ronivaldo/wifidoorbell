@@ -33,6 +33,9 @@ const char HTTP_FORM_PARAM[] PROGMEM      = "<br/><input id='{i}' name='{n}' max
 const char HTTP_FORM_END[] PROGMEM        = "<br/><button type='submit'>save</button></form>";
 const char HTTP_SCAN_LINK[] PROGMEM       = "<br/><div class=\"c\"><a href=\"/wifi\">Scan</a></div>";
 const char HTTP_SAVED[] PROGMEM           = "<div>Credentials Saved<br />Trying to connect ESP to network.<br />If it fails reconnect to AP to try again</div>";
+const char HTTP_UPDATE[] PROGMEM = "Upload New Firmware<br/><form method='POST' action='u' enctype='multipart/form-data' onchange=\"(function(el){document.getElementById('uploadbin').style.display = el.value=='' ? 'none' : 'initial';})(this)\"><input type='file' name='update' accept='.bin,application/octet-stream'><button id='uploadbin' type='submit' class='h D'>Update</button></form><small><a href='http://192.168.4.1/update' target='_blank'>* May not function inside captive portal, Open in browser http://192.168.244.1</a><small>";
+const char HTTP_UPDATE_FAIL[] PROGMEM = "<div class='msg D'><strong>Update Failed!</strong><Br/>Reboot device and try again</div>";
+const char HTTP_UPDATE_OK[] PROGMEM = "<div class='msg P'><strong>Update OK!</strong> Device Rebooting now...</div>";
 const char HTTP_END[] PROGMEM             = "</div></body></html>";
 
 #ifndef WIFI_MANAGER_MAX_PARAMS
@@ -171,6 +174,11 @@ class WiFiManager
     void          handle204();
     boolean       captivePortal();
     boolean       configPortalHasTimeout();
+
+    //OTA Update
+    void          handleUpdate();
+	  void          handleUpdating();
+    void          handleUpdateDone();
 
     // DNS server
     const byte    DNS_PORT = 53;
