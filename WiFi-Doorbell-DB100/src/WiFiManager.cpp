@@ -153,8 +153,8 @@ void WiFiManager::setupConfigPortal() {
   server->on(String(F("/r")), std::bind(&WiFiManager::handleReset, this));
   //server->on("/generate_204", std::bind(&WiFiManager::handle204, this));  //Android/Chrome OS captive portal check.
   server->on(String(F("/fwlink")), std::bind(&WiFiManager::handleRoot, this));  //Microsoft captive portal. Maybe not needed. Might be handled by notFound handler.
-  server->on((String)FPSTR(R_update), std::bind(&WiFiManager::handleUpdate, this));
-  server->on((String)FPSTR(R_updatedone), HTTP_POST, std::bind(&WiFiManager::handleUpdateDone, this), std::bind(&WiFiManager::handleUpdating, this));
+  server->on(String(F("/update")), std::bind(&WiFiManager::handleUpdate, this));
+  server->on(String(F("/u")), HTTP_POST, std::bind(&WiFiManager::handleUpdateDone, this), std::bind(&WiFiManager::handleUpdating, this));
   server->onNotFound (std::bind(&WiFiManager::handleNotFound, this));
   server->begin(); // Web server start
   DEBUG_WM(F("HTTP server started"));
@@ -745,18 +745,19 @@ void WiFiManager::handleReset() {
 
 // Called when /update is requested
 void WiFiManager::handleUpdate() {
-	DEBUG_WM(DEBUG_VERBOSE,F("<- Handle update"));
+	DEBUG_WM(F("<- Handle update"));
 	if (captivePortal()) return; // If captive portal redirect instead of displaying the page
-	String page = getHTTPHead(FPSTR(S_options)); // @token options
-	String str = FPSTR(HTTP_ROOT_MAIN);
-	str.replace(FPSTR(T_v), configPortalActive ? _apName : WiFi.localIP().toString()); // use ip if ap is not active for heading
-	page += str;
+
+	//str.replace(FPSTR(T_v), configPortalActive ? _apName : WiFi.localIP().toString()); // use ip if ap is not active for heading
+	//page += str;
+  String page = FPSTR(HTTP_HEAD);
+  page.replace("{v}", "Update");
 
 	page += FPSTR(HTTP_UPDATE);
 	page += FPSTR(HTTP_END);
 
-	server->sendHeader(FPSTR(HTTP_HEAD_CL), String(page.length()));
-	server->send(200, FPSTR(HTTP_HEAD_CT), page);
+  server->sendHeader("Content-Length", String(page.length()));
+  server->send(200, "text/html", page);
 
 }
 
@@ -830,13 +831,13 @@ void WiFiManager::handleUpdating(){
 
 // upload and ota done, show status
 void WiFiManager::handleUpdateDone() {
-	DEBUG_WM(DEBUG_VERBOSE, F("<- Handle update done"));
+	DEBUG_WM(F("<- Handle update done"));
 	if (captivePortal()) return; // If captive portal redirect instead of displaying the page
 
-	String page = getHTTPHead(FPSTR(S_options)); // @token options
-	String str  = FPSTR(HTTP_ROOT_MAIN);
-	str.replace(FPSTR(T_v), configPortalActive ? _apName : WiFi.localIP().toString()); // use ip if ap is not active for heading
-	page += str;
+	//str.replace(FPSTR(T_v), configPortalActive ? _apName : WiFi.localIP().toString()); // use ip if ap is not active for heading
+	//page += str;
+  String page = FPSTR(HTTP_HEAD);
+  page.replace("{v}", "Update Done");
 
 	if (Update.hasError()) {
 		page += FPSTR(HTTP_UPDATE_FAIL);
@@ -848,8 +849,8 @@ void WiFiManager::handleUpdateDone() {
 	}
 	page += FPSTR(HTTP_END);
 
-	server->sendHeader(FPSTR(HTTP_HEAD_CL), String(page.length()));
-	server->send(200, FPSTR(HTTP_HEAD_CT), page);
+  server->sendHeader("Content-Length", String(page.length()));
+  server->send(200, "text/html", page);
 
 	delay(1000); // send page
 	if (!Update.hasError()) {
