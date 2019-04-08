@@ -732,6 +732,9 @@ void WiFiManager::handleReset() {
   server->sendHeader("Content-Length", String(page.length()));
   server->send(200, "text/html", page);
 
+  //Erose WiFi Credentials
+  WiFi.disconnect(true);
+
   DEBUG_WM(F("Sent reset page"));
   delay(3000);
   ESP.reset();
