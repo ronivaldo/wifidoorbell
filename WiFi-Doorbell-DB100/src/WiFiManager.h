@@ -30,7 +30,7 @@ const char HTTP_PORTAL_OPTIONS[] PROGMEM  = "<ul><li><a href=\"/wifi\">Configure
 const char HTTP_ITEM[] PROGMEM            = "<li><a href='#p' onclick='c(this)'>{v}</a></li>";
 const char HTTP_FORM_START[] PROGMEM      = "<form method='get' action='wifisave' name='wifisave'><input type='hidden' id='s' name='s' length=32><br/><label for='p'>Password</label><input id='p' name='p' length=64 type='password'><br/><br/><h3>Settings</h3>";
 const char HTTP_FORM_PARAM[] PROGMEM      = "<label for='{i}'>{p}</label><input id='{i}' name='{n}' maxlength={l} value='{v}' {c}>";
-const char HTTP_FORM_END[] PROGMEM        = "<ul><li><a href='#' onclick='document.wifisave.submit()'>Save</a></li><li><a href=\"/wifi\">Re-Scan</a></li><li><a href=\"/r\">Reset</a></li></ul>";
+const char HTTP_FORM_END[] PROGMEM        = "<ul><li><a href='#' onclick='document.wifisave.submit()'>Save</a></li><li><a href=\"/wifi\">Re-Scan</a></li><li><a href=\"/r\">Forget Network</a></li></ul>";
 const char HTTP_SAVED[] PROGMEM           = "<div>Settings Saved<br />Trying to connect to network.<br />If it fails reconnect to AP to try again</div>";
 const char HTTP_UPDATE[] PROGMEM          = "<form method='POST' action='u' enctype='multipart/form-data' onchange=\"(function(el){document.getElementById('uploadbin').style.display = el.value=='' ? 'none' : 'initial';})(this)\"><input type='file' name='update' accept='.bin,application/octet-stream'><button id='uploadbin' type='submit' class='h D'>Update</button></form>";
 const char HTTP_UPDATE_FAIL[] PROGMEM     = "<div class='msg D'><strong>Update Failed!</strong><Br/>Reboot device and try again</div>";
